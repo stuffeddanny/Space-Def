@@ -3,25 +3,53 @@ import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.util.ArrayList;
-import java.util.Random;
-import java.util.random.RandomGenerator;
 
 public class Tester {
     public static void main(String[] args) {
-        new Game();
+        new MainScreen();
     }
 }
 
-class Game {
+class MainScreen {
     private final int WINDOW_WIDTH = 1200;
     private final int WINDOW_HEIGHT = 800;
 
-    private JFrame frame;
-    private ImagePanel panel;
+    private final int MAIN_SCREEN_RANDOM_BOOMS_DELAY = 200;
+    private final int BOOM_DELAY_BETWEEN_FRAMES = 250;
+    private final int ASTEROID_FALL_DELAY = 2000;
+
+    // Icons
+    private final ImageIcon background = new ImageIcon("images/background.png"),
+            asteroidIco = new ImageIcon("images/asteroid.png"),
+            redIco = new ImageIcon("images/red_first.png"),
+            greenIco = new ImageIcon("images/green_first.png"),
+            blueIco = new ImageIcon("images/blue_first.png"),
+            logoIco = new ImageIcon("images/logo.png"),
+            buttonIco = new ImageIcon("images/play_button.png"),
+            boom1Ico = new ImageIcon("images/boom1.png"),
+            boom2Ico = new ImageIcon("images/boom2.png"),
+            boom3Ico = new ImageIcon("images/boom3.png"),
+            highScoreIco = new ImageIcon("images/high_score.png");
+
+    // Screen Elements
+    private final JLabel asteroid = new JLabel(asteroidIco),
+            red = new JLabel(redIco),
+            green = new JLabel(greenIco),
+            blue = new JLabel(blueIco),
+            logo = new JLabel(logoIco),
+            boom = new JLabel(boom1Ico),
+            highScoreLabel = new JLabel(highScoreIco);
+    private final JButton button = new JButton(buttonIco);
+
+
+    // Frame and Panel
+    private final JFrame frame = new JFrame();
+    private final ImagePanel panel = new ImagePanel(background.getImage());
+
+    // High score
     private int highScore = 0;
 
-
-    public Game() {
+    public MainScreen() {
         setPanel();
         setFrame();
         setVisible();
@@ -31,34 +59,19 @@ class Game {
         frame.setVisible(true);
     }
 
-
-
     private void setPanel() {
-        panel = new ImagePanel(new ImageIcon("images/background.png").getImage());
         panel.setLayout(null);
 
-        var asteroidIco = new ImageIcon("images/asteroid.png");
-        var asteroid = new JLabel(asteroidIco);
         asteroid.setBounds(-100, -80, asteroidIco.getIconWidth(), asteroidIco.getIconHeight());
 
-        var redIco = new ImageIcon("images/red_first.png");
-        var red = new JLabel(redIco);
         red.setBounds(WINDOW_WIDTH/2 - redIco.getIconWidth()/2 - 160, 150, redIco.getIconWidth(), redIco.getIconHeight());
 
-        var greenIco = new ImageIcon("images/green_first.png");
-        var green = new JLabel(greenIco);
         green.setBounds(WINDOW_WIDTH/2 - greenIco.getIconWidth()/2, 180, greenIco.getIconWidth(), greenIco.getIconHeight());
 
-        var blueIco = new ImageIcon("images/blue_first.png");
-        var blue = new JLabel(blueIco);
         blue.setBounds(WINDOW_WIDTH/2 - blueIco.getIconWidth()/2 + 160, 210, blueIco.getIconWidth(), blueIco.getIconHeight());
 
-        var logoIco = new ImageIcon("images/logo.png");
-        var logo = new JLabel(logoIco);
         logo.setBounds(WINDOW_WIDTH/2 - logoIco.getIconWidth()/2, 320, logoIco.getIconWidth(), logoIco.getIconHeight());
 
-        var button = new JButton();
-        button.setIcon(new ImageIcon("images/play_button.png"));
         button.setBounds(400, 550, 400, 133);
         button.addActionListener(e -> frame.setVisible(false));
 
@@ -66,27 +79,22 @@ class Game {
         panel.add(green);
         panel.add(blue);
         panel.add(logo);
-        setHighScoreImage(panel, 440);
+        setHighScoreIco(440);
         panel.add(button);
         panel.add(asteroid);
 
-        animateAsteroid(asteroid, new Point(WINDOW_WIDTH, WINDOW_HEIGHT - 250), 630, 3);
+        animateAsteroid(new Point(WINDOW_WIDTH, WINDOW_HEIGHT - 250), 630, 3);
         cycledAnimate(red, new Point(WINDOW_WIDTH/2 - redIco.getIconWidth()/2 - 160, 210), 60, 15);
         cycledAnimate(blue, new Point(WINDOW_WIDTH/2 - blueIco.getIconWidth()/2 + 160, 150), 60, 15);
-        animateGreen(green, greenIco);
-        makeRandomBooms(panel);
-
+        animateGreen();
+        makeRandomBooms();
     }
 
-    private void makeRandomBooms(JPanel panel) {
-        var delay = 200;
-        new Timer(delay, new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                animateBoom(panel, randomNum(0, 1160), randomNum(0, 760));
-                makeRandomBooms(panel);
-                ((Timer) e.getSource()).stop();
-            }
+    private void makeRandomBooms() {
+        new Timer(MAIN_SCREEN_RANDOM_BOOMS_DELAY, e -> {
+            animateBoom(randomNum(0, WINDOW_WIDTH - boom1Ico.getIconWidth()), randomNum(0, WINDOW_HEIGHT - boom1Ico.getIconHeight()));
+            makeRandomBooms();
+            ((Timer) e.getSource()).stop();
         }).start();
     }
 
@@ -94,22 +102,14 @@ class Game {
         return (int) (Math.random() * (max - min + 1) + min);
     }
 
-    private void animateBoom(JPanel panel, int x, int y) {
-        var boom1Ico = new ImageIcon("images/boom1.png");
-        var boom2Ico = new ImageIcon("images/boom2.png");
-        var boom3Ico = new ImageIcon("images/boom3.png");
-
-        var delay = 250;
-        var boom = new JLabel(boom1Ico);
+    private void animateBoom(int x, int y) {
         boom.setBounds(x, y, boom1Ico.getIconWidth(), boom1Ico.getIconHeight());
-
         panel.add(boom);
-
-        new Timer(delay, e -> {
+        new Timer(BOOM_DELAY_BETWEEN_FRAMES, e -> {
             boom.setIcon(boom2Ico);
-            new Timer(delay, e1 -> {
+            new Timer(BOOM_DELAY_BETWEEN_FRAMES, e1 -> {
                 boom.setIcon(boom3Ico);
-                new Timer(delay, e11 -> {
+                new Timer(BOOM_DELAY_BETWEEN_FRAMES, e11 -> {
                     panel.remove(boom);
                     panel.repaint();
                     ((Timer) e11.getSource()).stop();
@@ -120,15 +120,15 @@ class Game {
         }).start();
     }
 
-    private void animateGreen(JComponent component, ImageIcon greenIco) {
-        Rectangle compBounds = component.getBounds();
+    private void animateGreen() {
+        Rectangle compBounds = green.getBounds();
 
         Point oldPoint = new Point(compBounds.x, compBounds.y);
 
         new Timer(15, new ActionListener() {
             int currentFrame = 0;
             public void actionPerformed(ActionEvent e) {
-                component.setBounds(oldPoint.x,
+                green.setBounds(oldPoint.x,
                         oldPoint.y + (currentFrame),
                         compBounds.width,
                         compBounds.height);
@@ -137,7 +137,7 @@ class Game {
                     currentFrame++;
                 else {
                     ((Timer) e.getSource()).stop();
-                    cycledAnimate(component, new Point(WINDOW_WIDTH / 2 - greenIco.getIconWidth() / 2, 150), 60, 15);
+                    cycledAnimate(green, new Point(WINDOW_WIDTH / 2 - greenIco.getIconWidth() / 2, 150), 60, 15);
                 }
             }
         }).start();
@@ -166,9 +166,8 @@ class Game {
         }).start();
     }
 
-    private void animateAsteroid(JComponent component, Point newPoint, int frames, int interval) {
-        Rectangle compBounds = component.getBounds();
-        var delay = 2000;
+    private void animateAsteroid(Point newPoint, int frames, int interval) {
+        Rectangle compBounds = asteroid.getBounds();
         Point oldPoint = new Point(compBounds.x, compBounds.y),
                 animFrame = new Point((newPoint.x - oldPoint.x) / frames,
                         (newPoint.y - oldPoint.y) / frames);
@@ -176,7 +175,7 @@ class Game {
         new Timer(interval, new ActionListener() {
             int currentFrame = 0;
             public void actionPerformed(ActionEvent e) {
-                component.setBounds(oldPoint.x + (animFrame.x * currentFrame),
+                asteroid.setBounds(oldPoint.x + (animFrame.x * currentFrame),
                         oldPoint.y + (animFrame.y * currentFrame),
                         compBounds.width,
                         compBounds.height);
@@ -186,10 +185,10 @@ class Game {
                 else {
                     ((Timer) e.getSource()).stop();
                     var random = randomNum(0, 800);
-                    component.setBounds(-100, -80 + random, 100, 80);
-                    new Timer(delay, e1 -> {
+                    asteroid.setBounds(-100, -80 + random, 100, 80);
+                    new Timer(ASTEROID_FALL_DELAY, e1 -> {
                         ((Timer) e1.getSource()).stop();
-                        animateAsteroid(component, new Point(WINDOW_WIDTH, WINDOW_HEIGHT - 250 + random), 630, 3);
+                        animateAsteroid(new Point(WINDOW_WIDTH, WINDOW_HEIGHT - 250 + random), 630, 3);
                     }).start();
                 }
             }
@@ -221,17 +220,15 @@ class Game {
         }).start();
     }
 
-    private void setHighScoreImage(ImagePanel panel, int y) {
+    private void setHighScoreIco(int y) {
         var stringHighScore = String.valueOf(highScore);
-        ImageIcon highScoreImage = new ImageIcon("images/high_score.png");
-        JLabel highScoreLabel = new JLabel(highScoreImage);
         ArrayList<ImageIcon> numbers = new ArrayList<>();
-        var width = highScoreImage.getIconWidth() + 20;
+        var width = highScoreIco.getIconWidth() + 20;
         for (int i = 0; i < stringHighScore.length(); i++) {
             numbers.add(new ImageIcon("images/numbers/" + stringHighScore.charAt(i) + ".png"));
             width += 35;
         }
-        highScoreLabel.setBounds(WINDOW_WIDTH/2 - width/2, y, highScoreImage.getIconWidth(), highScoreImage.getIconHeight());
+        highScoreLabel.setBounds(WINDOW_WIDTH/2 - width/2, y, highScoreIco.getIconWidth(), highScoreIco.getIconHeight());
         panel.add(highScoreLabel);
         var x = highScoreLabel.getX() + highScoreLabel.getWidth() + 25;
         for (ImageIcon ico : numbers) {
@@ -243,7 +240,6 @@ class Game {
     }
 
     private void setFrame() {
-        frame = new JFrame();
         frame.setSize(WINDOW_WIDTH, WINDOW_HEIGHT);
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         frame.setResizable(false);

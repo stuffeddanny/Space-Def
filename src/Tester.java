@@ -298,7 +298,11 @@ class GameScreen {
         frame.setTitle("Space Defenders");
         frame.addMouseMotionListener(new MouseMotionListener() {
             @Override
-            public void mouseDragged(MouseEvent e) {}
+            public void mouseDragged(MouseEvent e) {
+                if (e.getX() > rocketIco.getIconWidth()/2 && e.getX() < WINDOW_WIDTH - rocketIco.getIconWidth()/2) {
+                    rocketLabel.setBounds(e.getX() - rocketIco.getIconWidth()/2, 741, rocketIco.getIconWidth(), rocketIco.getIconHeight());
+                }
+            }
             @Override
             public void mouseMoved(MouseEvent e) {
                 if (e.getX() > rocketIco.getIconWidth()/2 && e.getX() < WINDOW_WIDTH - rocketIco.getIconWidth()/2) {
@@ -308,17 +312,20 @@ class GameScreen {
         });
 
         frame.addMouseListener(new MouseListener() {
+            Timer timer = new Timer(10, e1 -> {
+                shoot();
+            });
             @Override
             public void mouseClicked(MouseEvent e) {
                 shoot();
             }
             @Override
             public void mousePressed(MouseEvent e) {
-
+                timer.start();
             }
             @Override
             public void mouseReleased(MouseEvent e) {
-
+                timer.stop();
             }
             @Override
             public void mouseEntered(MouseEvent e) {

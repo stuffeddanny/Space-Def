@@ -1,3 +1,5 @@
+import jdk.jshell.execution.Util;
+
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.*;
@@ -85,8 +87,8 @@ class MainScreen {
         panel.add(asteroid);
 
         animateAsteroid(new Point(WINDOW_WIDTH, WINDOW_HEIGHT - 250), 630, 3);
-        cycledAnimate(red, new Point(WINDOW_WIDTH/2 - redIco.getIconWidth()/2 - 160, 210), 60, 15);
-        cycledAnimate(blue, new Point(WINDOW_WIDTH/2 - blueIco.getIconWidth()/2 + 160, 150), 60, 15);
+        Utilities.cycledAnimate(red, new Point(WINDOW_WIDTH/2 - redIco.getIconWidth()/2 - 160, 210), 60, 15);
+        Utilities.cycledAnimate(blue, new Point(WINDOW_WIDTH/2 - blueIco.getIconWidth()/2 + 160, 150), 60, 15);
         animateGreen();
         makeRandomBooms();
     }
@@ -94,13 +96,9 @@ class MainScreen {
     private void makeRandomBooms() {
         new Timer(MAIN_SCREEN_RANDOM_BOOMS_DELAY, e -> {
             ((Timer) e.getSource()).stop();
-            animateBoom(randomNum(0, WINDOW_WIDTH - boom1Ico.getIconWidth()), randomNum(0, WINDOW_HEIGHT - boom1Ico.getIconHeight()));
+            animateBoom(Utilities.randomNum(0, WINDOW_WIDTH - boom1Ico.getIconWidth()), Utilities.randomNum(0, WINDOW_HEIGHT - boom1Ico.getIconHeight()));
             makeRandomBooms();
         }).start();
-    }
-
-    private int randomNum(int min, int max) {
-        return (int) (Math.random() * (max - min + 1) + min);
     }
 
     private void animateBoom(int x, int y) {
@@ -139,7 +137,7 @@ class MainScreen {
                     currentFrame++;
                 else {
                     ((Timer) e.getSource()).stop();
-                    cycledAnimate(green, new Point(WINDOW_WIDTH / 2 - greenIco.getIconWidth() / 2, 150), 60, 15);
+                    Utilities.cycledAnimate(green, new Point(WINDOW_WIDTH / 2 - greenIco.getIconWidth() / 2, 150), 60, 15);
                 }
             }
         }).start();
@@ -163,37 +161,12 @@ class MainScreen {
                     currentFrame++;
                 else {
                     ((Timer) e.getSource()).stop();
-                    var random = randomNum(0, 800);
+                    var random = Utilities.randomNum(0, 800);
                     asteroid.setBounds(-100, -80 + random, 100, 80);
                     new Timer(ASTEROID_FALL_DELAY, e1 -> {
                         ((Timer) e1.getSource()).stop();
                         animateAsteroid(new Point(WINDOW_WIDTH, WINDOW_HEIGHT - 250 + random), 630, 3);
                     }).start();
-                }
-            }
-        }).start();
-    }
-
-    private void cycledAnimate(JComponent component, Point newPoint, int frames, int interval) {
-        Rectangle compBounds = component.getBounds();
-
-        Point oldPoint = new Point(compBounds.x, compBounds.y),
-                animFrame = new Point((newPoint.x - oldPoint.x) / frames,
-                        (newPoint.y - oldPoint.y) / frames);
-
-        new Timer(interval, new ActionListener() {
-            int currentFrame = 0;
-            public void actionPerformed(ActionEvent e) {
-                component.setBounds(oldPoint.x + (animFrame.x * currentFrame),
-                        oldPoint.y + (animFrame.y * currentFrame),
-                        compBounds.width,
-                        compBounds.height);
-
-                if (currentFrame != frames) {
-                    currentFrame++;
-                } else {
-                    ((Timer) e.getSource()).stop();
-                    cycledAnimate(component, oldPoint, frames, interval);
                 }
             }
         }).start();
@@ -232,6 +205,11 @@ class GameScreen {
     private final int WINDOW_HEIGHT = 850;
     private final int SHOOT_DELAY_BETWEEN_FRAMES = 3;
     private final int BOOM_DELAY_BETWEEN_FRAMES = 200;
+    private final int UFO_Y = 50;
+    private final int UFO_DELAY = 25000;
+    private final int X_MOVEMENT_DIST_FOR_MONSTERS = 20;
+    private final int Y_MOVEMENT_DIST_FOR_MONSTERS = 20;
+    private final int TIME_INTERVAL_IN_MONSTERS_MOVEMENTS = 1000;
 
     // Icons
     private final ImageIcon background = new ImageIcon("images/background.png"),
@@ -255,6 +233,7 @@ class GameScreen {
             boom1Ico = new ImageIcon("images/booms/boom1.png"),
             boom2Ico = new ImageIcon("images/booms/boom2.png"),
             boom3Ico = new ImageIcon("images/booms/boom3.png"),
+            ufoIco = new ImageIcon("images/icons/ufo.png"),
             monster51Ico = new ImageIcon("images/monsters/monster5_1.png");
 
     // Screen Elements
@@ -263,6 +242,7 @@ class GameScreen {
             levelLabel = new JLabel(levelIco),
             rocketLabel = new JLabel(rocketIco),
             rocketShotLabel = new JLabel(rocketShotIco),
+            ufo = new JLabel(ufoIco),
             gameOverLabel = new JLabel(gameOverIco);
     private final ArrayList<JLabel> hearts = new ArrayList<>(),
             numbers = new ArrayList<>(),
@@ -279,6 +259,8 @@ class GameScreen {
     private boolean rocketIsOut = false;
     private boolean down = true;
     private String direction = "right";
+
+    private int score = 0;
 
 
     public GameScreen() {
@@ -339,7 +321,6 @@ class GameScreen {
         frame.add(panel);
     }
 
-
     private void setPanel() {
         panel.setLayout(null);
 
@@ -361,7 +342,7 @@ class GameScreen {
         panel.add(livesLabel);
         setLives(3);
         panel.add(scoreLabel);
-        setScore(0, 10);
+        setScore(score, 10);
         panel.add(levelLabel);
         setLevel(1, 10);
 
@@ -369,16 +350,18 @@ class GameScreen {
 
         panel.add(rocketLabel);
 
+        ufo.setBounds(-ufoIco.getIconWidth(), UFO_Y, ufoIco.getIconWidth(), ufoIco.getIconHeight());
+        panel.add(ufo);
+
+        timeUfo(UFO_DELAY, UFO_Y);
+
         createMonsters();
 
         for (JLabel monster : monsters) {
             panel.add(monster);
         }
 
-        var movementDist = 20;
-        var downMovDist = 20;
-        var timeInterval = 1000;
-        animateMonsters(downMovDist, movementDist, timeInterval);
+        animateMonsters(Y_MOVEMENT_DIST_FOR_MONSTERS, X_MOVEMENT_DIST_FOR_MONSTERS, TIME_INTERVAL_IN_MONSTERS_MOVEMENTS);
 
     }
 
@@ -390,15 +373,15 @@ class GameScreen {
                     if (collisionCheck(width)) {
                         direction = "downl";
                     } else {
-                        moveRight(movementDist, timeInterval);
+                        moveMonstersRight(movementDist, timeInterval);
                     }
                     break;
                 case "downl":
                     if (down) {
-                        moveDown(downMovDist, timeInterval);
+                        moveMonstersDown(downMovDist, timeInterval);
                         down = false;
                     } else {
-                        moveLeft(movementDist, timeInterval);
+                        moveMonstersLeft(movementDist, timeInterval);
                         down = true;
                         direction = "left";
                     }
@@ -407,15 +390,15 @@ class GameScreen {
                     if (collisionCheck(width)) {
                         direction = "downr";
                     } else {
-                        moveLeft(movementDist, timeInterval);
+                        moveMonstersLeft(movementDist, timeInterval);
                     }
                     break;
                 case "downr":
                     if (down) {
-                        moveDown(downMovDist, timeInterval);
+                        moveMonstersDown(downMovDist, timeInterval);
                         down = false;
                     } else {
-                        moveRight(movementDist, timeInterval);
+                        moveMonstersRight(movementDist, timeInterval);
                         down = true;
                         direction = "right";
                     }
@@ -535,6 +518,37 @@ class GameScreen {
         }
     }
 
+    private void timeUfo(int delay, int y) {
+        new Timer(delay, e -> animateUfo(y, 4)).start();
+    }
+
+    private void animateUfo(int y, int interval) {
+        var frames = WINDOW_WIDTH + ufoIco.getIconWidth();
+        Rectangle compBounds = ufo.getBounds();
+        Point newPoint = new Point(WINDOW_WIDTH, y);
+
+        Point oldPoint = new Point(compBounds.x, compBounds.y),
+                animFrame = new Point((newPoint.x - oldPoint.x) / frames,
+                        (newPoint.y - oldPoint.y) / frames);
+
+        new Timer(interval, new ActionListener() {
+            int currentFrame = 0;
+            public void actionPerformed(ActionEvent e) {
+                ufo.setBounds(oldPoint.x + (animFrame.x * currentFrame),
+                        oldPoint.y + (animFrame.y * currentFrame),
+                        compBounds.width,
+                        compBounds.height);
+
+                if (! checkShootForCollisionWithUfo(rocketShotLabel) && currentFrame != frames) {
+                    currentFrame++;
+                } else {
+                    ((Timer) e.getSource()).stop();
+                    ufo.setBounds(- ufoIco.getIconWidth(), ufo.getY(), ufoIco.getIconWidth(), ufoIco.getIconHeight());
+                }
+            }
+        }).start();
+    }
+
     private void shoot() {
         if (!rocketIsOut) {
             rocketShotLabel.setBounds(rocketLabel.getX() + rocketIco.getIconWidth() / 2 - rocketShotIco.getIconWidth() / 2, rocketLabel.getY() + 15, rocketShotIco.getIconWidth(), rocketShotIco.getIconHeight());
@@ -558,7 +572,7 @@ class GameScreen {
                         oldPoint.y + (animFrame.y * currentFrame),
                         compBounds.width,
                         compBounds.height);
-                if (checkRocketForCollision(component)) {
+                if (checkShootForCollisionWithMonster(component)) {
                     ((Timer) e.getSource()).stop();
                 }
                 if (currentFrame != frames)
@@ -571,13 +585,14 @@ class GameScreen {
         }).start();
     }
 
-    private boolean checkRocketForCollision(JComponent rocketShot) {
+    private boolean checkShootForCollisionWithMonster(JComponent rocketShot) {
         for (JLabel monster : monsters) {
-            if (isContain(monster, rocketShot.getX() + rocketShot.getWidth()/2, rocketShot.getY()) ||
-                    isContain(monster, rocketShot.getX(), rocketShot.getY()) ||
-                    isContain(monster, rocketShot.getX() + rocketShot.getWidth(), rocketShot.getY())) {
+            if (Utilities.isContain(monster, rocketShot.getX() + rocketShot.getWidth()/2, rocketShot.getY()) ||
+                    Utilities.isContain(monster, rocketShot.getX(), rocketShot.getY()) ||
+                    Utilities.isContain(monster, rocketShot.getX() + rocketShot.getWidth(), rocketShot.getY())) {
                 panel.remove(monster);
                 monsters.remove(monster);
+                addScoreForMonster(monster);
                 animateBoom(rocketShot.getX() + rocketShot.getWidth()/2 - boom1Ico.getIconWidth()/2, rocketShot.getY() - boom1Ico.getIconWidth()/2);
                 panel.remove(rocketShotLabel);
                 rocketIsOut = false;
@@ -587,12 +602,40 @@ class GameScreen {
         }
         return false;
     }
-
-    private boolean isContain(JComponent comp, int x, int y) {
-        if ((x >= comp.getX() && x <= comp.getX() + comp.getWidth()) && (y >= comp.getY() && y <= comp.getY() + comp.getHeight())) {
+    private boolean checkShootForCollisionWithUfo(JComponent rocketShot) {
+        if (Utilities.isContain(ufo, rocketShot.getX() + rocketShot.getWidth()/2, rocketShot.getY()) ||
+                Utilities.isContain(ufo, rocketShot.getX(), rocketShot.getY()) ||
+                Utilities.isContain(ufo, rocketShot.getX() + rocketShot.getWidth(), rocketShot.getY())) {
+            addScoreForUfo();
+            animateBoom(rocketShot.getX() + rocketShot.getWidth()/2 - boom1Ico.getIconWidth()/2, rocketShot.getY() - boom1Ico.getIconWidth()/2);
+            panel.remove(rocketShotLabel);
+            rocketIsOut = false;
+            panel.repaint();
             return true;
         }
         return false;
+    }
+
+    private void addScoreForUfo() {
+        var plot = Utilities.randomNum(1, 4);
+        System.out.println(plot);
+        switch (plot) {
+            case 1 -> setScore(score += 50, 10);
+            case 2 -> setScore(score += 100, 10);
+            case 3 -> setScore(score += 150, 10);
+            case 4 -> setScore(score += 300, 10);
+        }
+    }
+
+    private void addScoreForMonster(JLabel monster) {
+        var icon = monster.getIcon();
+        if (icon.equals(monster11Ico) || icon.equals(monster10Ico) || icon.equals(monster21Ico) || icon.equals(monster20Ico)) {
+            setScore(score += 30, 10);
+        } else if (icon.equals(monster31Ico) || icon.equals(monster30Ico)) {
+            setScore(score += 20, 10);
+        } else {
+            setScore(score += 10, 10);
+        }
     }
 
     private boolean collisionCheck(int width) {
@@ -631,70 +674,22 @@ class GameScreen {
         }).start();
     }
 
-    private void moveRight(int movementDist, int timeInterval) {
+    private void moveMonstersRight(int movementDist, int timeInterval) {
         for (JLabel monster : monsters) {
-            animate(monster, new Point(monster.getX() + movementDist, monster.getY()), movementDist, timeInterval/2/movementDist);
+            Utilities.animate(monster, new Point(monster.getX() + movementDist, monster.getY()), movementDist, timeInterval/2/movementDist);
         }
     }
 
-    private void moveLeft(int movementDist, int timeInterval) {
+    private void moveMonstersLeft(int movementDist, int timeInterval) {
         for (JLabel monster : monsters) {
-            animate(monster, new Point(monster.getX() - movementDist, monster.getY()), movementDist, timeInterval/2/movementDist);
+            Utilities.animate(monster, new Point(monster.getX() - movementDist, monster.getY()), movementDist, timeInterval/2/movementDist);
         }
     }
 
-    private void moveDown(int movementDist, int timeInterval) {
+    private void moveMonstersDown(int movementDist, int timeInterval) {
         for (JLabel monster : monsters) {
-            animate(monster, new Point(monster.getX(), monster.getY() + movementDist), movementDist, timeInterval/2/movementDist);
+            Utilities.animate(monster, new Point(monster.getX(), monster.getY() + movementDist), movementDist, timeInterval/2/movementDist);
         }
-    }
-
-    private void cycledAnimate(JComponent component, Point newPoint, int frames, int interval) {
-        Rectangle compBounds = component.getBounds();
-
-        Point oldPoint = new Point(compBounds.x, compBounds.y),
-                animFrame = new Point((newPoint.x - oldPoint.x) / frames,
-                        (newPoint.y - oldPoint.y) / frames);
-
-        new Timer(interval, new ActionListener() {
-            int currentFrame = 0;
-            public void actionPerformed(ActionEvent e) {
-                component.setBounds(oldPoint.x + (animFrame.x * currentFrame),
-                        oldPoint.y + (animFrame.y * currentFrame),
-                        compBounds.width,
-                        compBounds.height);
-
-                if (currentFrame != frames) {
-                    currentFrame++;
-                } else {
-                    ((Timer) e.getSource()).stop();
-                    cycledAnimate(component, oldPoint, frames, interval);
-                }
-            }
-        }).start();
-    }
-
-    private void animate(JComponent component, Point newPoint, int frames, int interval) {
-        Rectangle compBounds = component.getBounds();
-
-        Point oldPoint = new Point(compBounds.x, compBounds.y),
-                animFrame = new Point((newPoint.x - oldPoint.x) / frames,
-                        (newPoint.y - oldPoint.y) / frames);
-
-        new Timer(interval, new ActionListener() {
-            int currentFrame = 0;
-            public void actionPerformed(ActionEvent e) {
-                component.setBounds(oldPoint.x + (animFrame.x * currentFrame),
-                        oldPoint.y + (animFrame.y * currentFrame),
-                        compBounds.width,
-                        compBounds.height);
-
-                if (currentFrame != frames)
-                    currentFrame++;
-                else
-                    ((Timer)e.getSource()).stop();
-            }
-        }).start();
     }
 }
 
@@ -721,3 +716,63 @@ class ImagePanel extends JPanel {
     }
 
 }
+
+class Utilities {
+    public static int randomNum(int min, int max) {
+        return (int) (Math.random() * (max - min + 1) + min);
+    }
+
+    public static void animate(JComponent component, Point newPoint, int frames, int interval) {
+        Rectangle compBounds = component.getBounds();
+
+        Point oldPoint = new Point(compBounds.x, compBounds.y),
+                animFrame = new Point((newPoint.x - oldPoint.x) / frames,
+                        (newPoint.y - oldPoint.y) / frames);
+
+        new Timer(interval, new ActionListener() {
+            int currentFrame = 0;
+            public void actionPerformed(ActionEvent e) {
+                component.setBounds(oldPoint.x + (animFrame.x * currentFrame),
+                        oldPoint.y + (animFrame.y * currentFrame),
+                        compBounds.width,
+                        compBounds.height);
+
+                if (currentFrame != frames)
+                    currentFrame++;
+                else
+                    ((Timer)e.getSource()).stop();
+            }
+        }).start();
+    }
+
+    public static void cycledAnimate(JComponent component, Point newPoint, int frames, int interval) {
+        Rectangle compBounds = component.getBounds();
+
+        Point oldPoint = new Point(compBounds.x, compBounds.y),
+                animFrame = new Point((newPoint.x - oldPoint.x) / frames,
+                        (newPoint.y - oldPoint.y) / frames);
+
+        new Timer(interval, new ActionListener() {
+            int currentFrame = 0;
+            public void actionPerformed(ActionEvent e) {
+                component.setBounds(oldPoint.x + (animFrame.x * currentFrame),
+                        oldPoint.y + (animFrame.y * currentFrame),
+                        compBounds.width,
+                        compBounds.height);
+
+                if (currentFrame != frames) {
+                    currentFrame++;
+                } else {
+                    ((Timer) e.getSource()).stop();
+                    cycledAnimate(component, oldPoint, frames, interval);
+                }
+            }
+        }).start();
+    }
+
+    public static boolean isContain(JComponent comp, int x, int y) {
+        if ((x >= comp.getX() && x <= comp.getX() + comp.getWidth()) && (y >= comp.getY() && y <= comp.getY() + comp.getHeight())) {
+            return true;
+        }
+        return false;
+    }

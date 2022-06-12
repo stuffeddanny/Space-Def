@@ -1,5 +1,3 @@
-import jdk.jshell.execution.Util;
-
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.*;
@@ -47,7 +45,7 @@ class MainScreen {
     private final ImagePanel panel = new ImagePanel(background.getImage());
 
     // High score
-    private int highScore = 1250;
+    private int highScore = 0;
 
     public MainScreen() {
         setPanel();
@@ -209,7 +207,7 @@ class GameScreen {
     private final int UFO_DELAY = 25000;
     private final int X_MOVEMENT_DIST_FOR_MONSTERS = 20;
     private final int Y_MOVEMENT_DIST_FOR_MONSTERS = 20;
-    private final int TIME_INTERVAL_IN_MONSTERS_MOVEMENTS = 1000;
+    private int TIME_INTERVAL_IN_MONSTERS_MOVEMENTS = 1000;
 
     // Icons
     private final ImageIcon background = new ImageIcon("images/background.png"),
@@ -261,6 +259,8 @@ class GameScreen {
     private String direction = "right";
 
     private int score = 0;
+    private int scoreForBonus = 0;
+    private int lives = 3;
 
 
     public GameScreen() {
@@ -340,7 +340,7 @@ class GameScreen {
         }
 
         panel.add(livesLabel);
-        setLives(3);
+        setLives(lives);
         panel.add(scoreLabel);
         setScore(score, 10);
         panel.add(levelLabel);
@@ -368,44 +368,6 @@ class GameScreen {
     private void animateMonsters(int downMovDist, int movementDist, int timeInterval) {
         var width = monster10Ico.getIconWidth();
         new Timer(timeInterval, e -> {
-            switch (direction) {
-                case "right":
-                    if (collisionCheck(width)) {
-                        direction = "downl";
-                    } else {
-                        moveMonstersRight(movementDist, timeInterval);
-                    }
-                    break;
-                case "downl":
-                    if (down) {
-                        moveMonstersDown(downMovDist, timeInterval);
-                        down = false;
-                    } else {
-                        moveMonstersLeft(movementDist, timeInterval);
-                        down = true;
-                        direction = "left";
-                    }
-                    break;
-                case "left":
-                    if (collisionCheck(width)) {
-                        direction = "downr";
-                    } else {
-                        moveMonstersLeft(movementDist, timeInterval);
-                    }
-                    break;
-                case "downr":
-                    if (down) {
-                        moveMonstersDown(downMovDist, timeInterval);
-                        down = false;
-                    } else {
-                        moveMonstersRight(movementDist, timeInterval);
-                        down = true;
-                        direction = "right";
-                    }
-                    break;
-            }
-        }).start();
-        new Timer(timeInterval, e1 -> {
             for (JLabel monster : monsters) {
                 Icon icon = monster.getIcon();
                 if (monster10Ico.equals(icon)) {
@@ -429,6 +391,46 @@ class GameScreen {
                 } else if (monster51Ico.equals(icon)) {
                     monster.setIcon(monster50Ico);
                 }
+            }
+            switch (direction) {
+                case "right":
+                    if (collisionCheck(width)) {
+                        direction = "downl";
+                    } else {
+                        moveMonstersRight(movementDist, timeInterval);
+                    }
+                    break;
+                case "downl":
+                    if (down) {
+                        moveMonstersDown(downMovDist, timeInterval);
+                        ((Timer) e.getSource()).stop();
+                        animateMonsters(downMovDist, movementDist, TIME_INTERVAL_IN_MONSTERS_MOVEMENTS-=20);
+                        down = false;
+                    } else {
+                        moveMonstersLeft(movementDist, timeInterval);
+                        down = true;
+                        direction = "left";
+                    }
+                    break;
+                case "left":
+                    if (collisionCheck(width)) {
+                        direction = "downr";
+                    } else {
+                        moveMonstersLeft(movementDist, timeInterval);
+                    }
+                    break;
+                case "downr":
+                    if (down) {
+                        moveMonstersDown(downMovDist, timeInterval);
+                        ((Timer) e.getSource()).stop();
+                        animateMonsters(downMovDist, movementDist, TIME_INTERVAL_IN_MONSTERS_MOVEMENTS-=20);
+                        down = false;
+                    } else {
+                        moveMonstersRight(movementDist, timeInterval);
+                        down = true;
+                        direction = "right";
+                    }
+                    break;
             }
         }).start();
     }
@@ -509,6 +511,7 @@ class GameScreen {
         panel.repaint();
     }
     private void setLives(int lives) {
+        this.lives = lives;
         var empty = 3 - lives;
         for (int i = 0; i < lives; i++) {
             hearts.get(i).setIcon(fullHeartIco);
@@ -618,12 +621,29 @@ class GameScreen {
 
     private void addScoreForUfo() {
         var plot = Utilities.randomNum(1, 4);
-        System.out.println(plot);
         switch (plot) {
-            case 1 -> setScore(score += 50, 10);
-            case 2 -> setScore(score += 100, 10);
-            case 3 -> setScore(score += 150, 10);
-            case 4 -> setScore(score += 300, 10);
+            case 1 -> {
+                setScore(score += 50, 10);
+                scoreForBonus += 50;
+            }
+            case 2 -> {
+                setScore(score += 100, 10);
+                scoreForBonus += 100;
+            }
+            case 3 -> {
+                setScore(score += 150, 10);
+                scoreForBonus += 150;
+            }
+            case 4 -> {
+                setScore(score += 300, 10);
+                scoreForBonus += 300;
+            }
+        }
+        if (scoreForBonus >= 50) {
+            scoreForBonus -= 50;
+            if (lives < 3) {
+                setLives(lives + 1);
+            }
         }
     }
 
@@ -631,10 +651,19 @@ class GameScreen {
         var icon = monster.getIcon();
         if (icon.equals(monster11Ico) || icon.equals(monster10Ico) || icon.equals(monster21Ico) || icon.equals(monster20Ico)) {
             setScore(score += 30, 10);
+            scoreForBonus += 30;
         } else if (icon.equals(monster31Ico) || icon.equals(monster30Ico)) {
             setScore(score += 20, 10);
+            scoreForBonus += 20;
         } else {
             setScore(score += 10, 10);
+            scoreForBonus += 10;
+        }
+        if (scoreForBonus >= 50) {
+            scoreForBonus -= 50;
+            if (lives < 3) {
+                setLives(lives + 1);
+            }
         }
     }
 
@@ -731,6 +760,7 @@ class Utilities {
 
         new Timer(interval, new ActionListener() {
             int currentFrame = 0;
+
             public void actionPerformed(ActionEvent e) {
                 component.setBounds(oldPoint.x + (animFrame.x * currentFrame),
                         oldPoint.y + (animFrame.y * currentFrame),
@@ -740,7 +770,7 @@ class Utilities {
                 if (currentFrame != frames)
                     currentFrame++;
                 else
-                    ((Timer)e.getSource()).stop();
+                    ((Timer) e.getSource()).stop();
             }
         }).start();
     }
@@ -754,6 +784,7 @@ class Utilities {
 
         new Timer(interval, new ActionListener() {
             int currentFrame = 0;
+
             public void actionPerformed(ActionEvent e) {
                 component.setBounds(oldPoint.x + (animFrame.x * currentFrame),
                         oldPoint.y + (animFrame.y * currentFrame),
@@ -776,3 +807,4 @@ class Utilities {
         }
         return false;
     }
+}

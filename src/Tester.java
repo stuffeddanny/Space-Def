@@ -13,7 +13,6 @@ class MainScreen {
     private final int WINDOW_WIDTH = 1200;
     private final int WINDOW_HEIGHT = 800;
 
-    private final int MAIN_SCREEN_RANDOM_BOOMS_DELAY = 200;
     private final int BOOM_DELAY_BETWEEN_FRAMES = 250;
     private final int ASTEROID_FALL_DELAY = 2000;
 
@@ -78,7 +77,7 @@ class MainScreen {
         panel.add(button);
         panel.add(asteroid);
 
-        animateAsteroid(new Point(WINDOW_WIDTH, WINDOW_HEIGHT - 250), 630, 3);
+        animateAsteroid(new Point(WINDOW_WIDTH, WINDOW_HEIGHT - 250));
         Utilities.cycledAnimate(red, new Point(WINDOW_WIDTH/2 - redIco.getIconWidth()/2 - 160, 210), 60, 15);
         Utilities.cycledAnimate(blue, new Point(WINDOW_WIDTH/2 - blueIco.getIconWidth()/2 + 160, 150), 60, 15);
         animateGreen();
@@ -86,6 +85,7 @@ class MainScreen {
     }
 
     private void makeRandomBooms() {
+        int MAIN_SCREEN_RANDOM_BOOMS_DELAY = 200;
         new Timer(MAIN_SCREEN_RANDOM_BOOMS_DELAY, e -> {
             ((Timer) e.getSource()).stop();
             animateBoom(Utilities.randomNum(0, WINDOW_WIDTH - boom1Ico.getIconWidth()), Utilities.randomNum(0, WINDOW_HEIGHT - boom1Ico.getIconHeight()));
@@ -135,13 +135,13 @@ class MainScreen {
         }).start();
     }
 
-    private void animateAsteroid(Point newPoint, int frames, int interval) {
+    private void animateAsteroid(Point newPoint) {
         Rectangle compBounds = asteroid.getBounds();
         Point oldPoint = new Point(compBounds.x, compBounds.y),
-                animFrame = new Point((newPoint.x - oldPoint.x) / frames,
-                        (newPoint.y - oldPoint.y) / frames);
+                animFrame = new Point((newPoint.x - oldPoint.x) / 630,
+                        (newPoint.y - oldPoint.y) / 630);
 
-        new Timer(interval, new ActionListener() {
+        new Timer(3, new ActionListener() {
             int currentFrame = 0;
             public void actionPerformed(ActionEvent e) {
                 asteroid.setBounds(oldPoint.x + (animFrame.x * currentFrame),
@@ -149,7 +149,7 @@ class MainScreen {
                         compBounds.width,
                         compBounds.height);
 
-                if (currentFrame != frames)
+                if (currentFrame != 630)
                     currentFrame++;
                 else {
                     ((Timer) e.getSource()).stop();
@@ -157,7 +157,7 @@ class MainScreen {
                     asteroid.setBounds(-100, -80 + random, 100, 80);
                     new Timer(ASTEROID_FALL_DELAY, e1 -> {
                         ((Timer) e1.getSource()).stop();
-                        animateAsteroid(new Point(WINDOW_WIDTH, WINDOW_HEIGHT - 250 + random), 630, 3);
+                        animateAsteroid(new Point(WINDOW_WIDTH, WINDOW_HEIGHT - 250 + random));
                     }).start();
                 }
             }
@@ -176,12 +176,7 @@ class MainScreen {
 class GameScreen {
     private final int WINDOW_WIDTH = 1400;
     private final int WINDOW_HEIGHT = 850;
-    private final int SHOOT_DELAY_BETWEEN_FRAMES = 3;
     private final int BOOM_DELAY_BETWEEN_FRAMES = 200;
-    private final int UFO_Y = 50;
-    private final int UFO_DELAY = 25000;
-    private final int X_MOVEMENT_DIST_FOR_MONSTERS = 20;
-    private final int Y_MOVEMENT_DIST_FOR_MONSTERS = 20;
     private int TIME_INTERVAL_IN_MONSTERS_MOVEMENTS,
             MIN_TIME_INTERVAL_BETWEEN_MONSTERS_SHOTS,
             MAX_TIME_INTERVAL_BETWEEN_MONSTERS_SHOTS;
@@ -244,7 +239,7 @@ class GameScreen {
 
     private final int level;
 
-    private ArrayList<Integer> castlesHp = new ArrayList<>();
+    private final ArrayList<Integer> castlesHp = new ArrayList<>();
 
     public GameScreen(int level) {
         this.level = level;
@@ -295,9 +290,7 @@ class GameScreen {
         });
 
         frame.addMouseListener(new MouseListener() {
-            Timer timer = new Timer(10, e1 -> {
-                shoot();
-            });
+            final Timer timer = new Timer(10, e1 -> shoot());
             @Override
             public void mouseClicked(MouseEvent e) {
                 shoot();
@@ -343,17 +336,19 @@ class GameScreen {
         panel.add(livesLabel);
         setLives(lives);
         panel.add(scoreLabel);
-        setScore(score, 10);
+        setScore(score);
         panel.add(levelLabel);
-        setLevel(level, 10);
+        setLevel(level);
 
         rocketLabel.setBounds(WINDOW_WIDTH/2 - rocketIco.getIconWidth()/2, 741, rocketIco.getIconWidth(), rocketIco.getIconHeight());
 
         panel.add(rocketLabel);
 
+        int UFO_Y = 50;
         ufo.setBounds(-ufoIco.getIconWidth(), UFO_Y, ufoIco.getIconWidth(), ufoIco.getIconHeight());
         panel.add(ufo);
 
+        int UFO_DELAY = 25000;
         timeUfo(UFO_DELAY, UFO_Y);
 
         createMonsters();
@@ -368,7 +363,9 @@ class GameScreen {
             panel.add(monster);
         }
 
-        animateMonsters(Y_MOVEMENT_DIST_FOR_MONSTERS, X_MOVEMENT_DIST_FOR_MONSTERS, TIME_INTERVAL_IN_MONSTERS_MOVEMENTS);
+        int x_MOVEMENT_DIST_FOR_MONSTERS = 20;
+        int y_MOVEMENT_DIST_FOR_MONSTERS = 20;
+        animateMonsters(y_MOVEMENT_DIST_FOR_MONSTERS, x_MOVEMENT_DIST_FOR_MONSTERS, TIME_INTERVAL_IN_MONSTERS_MOVEMENTS);
         animateMonstersShots();
     }
 
@@ -455,7 +452,7 @@ class GameScreen {
     private void gameOver() {
         try {
             Thread.sleep(1000);
-        } catch (Exception e) {
+        } catch (Exception ignored) {
 
         }
         new GameOver();
@@ -586,7 +583,7 @@ class GameScreen {
         }
     }
 
-    private void setLevel(int level, int y) {
+    private void setLevel(int level) {
         for (JLabel lab : levelScreenNumbers) {
             panel.remove(lab);
         }
@@ -600,17 +597,17 @@ class GameScreen {
             digits.add(Integer.parseInt(String.valueOf(stringLevel.charAt(i))));
             width += 20;
         }
-        levelLabel.setBounds(WINDOW_WIDTH - width - 10, y, levelIco.getIconWidth(), levelIco.getIconHeight());
+        levelLabel.setBounds(WINDOW_WIDTH - width - 10, 10, levelIco.getIconWidth(), levelIco.getIconHeight());
         var x = levelLabel.getX() + levelLabel.getWidth() + 25;
         for (Integer dig : digits) {
             levelScreenNumbers.add(new JLabel(numbers.get(dig).getIcon()));
-            levelScreenNumbers.get(levelScreenNumbers.size()-1).setBounds(x, y, numbers.get(dig).getIcon().getIconWidth(), numbers.get(dig).getIcon().getIconHeight());
+            levelScreenNumbers.get(levelScreenNumbers.size()-1).setBounds(x, 10, numbers.get(dig).getIcon().getIconWidth(), numbers.get(dig).getIcon().getIconHeight());
             panel.add(levelScreenNumbers.get(levelScreenNumbers.size()-1));
             x += 20;
         }
         panel.repaint();
     }
-    private void setScore(int score, int y) {
+    private void setScore(int score) {
         for (JLabel lab : scoreScreenNumbers) {
             panel.remove(lab);
         }
@@ -624,11 +621,11 @@ class GameScreen {
             digits.add(Integer.parseInt(String.valueOf(stringScore.charAt(i))));
             width += 20;
         }
-        scoreLabel.setBounds(WINDOW_WIDTH/2 - width/2, y, scoreIco.getIconWidth(), scoreIco.getIconHeight());
+        scoreLabel.setBounds(WINDOW_WIDTH/2 - width/2, 10, scoreIco.getIconWidth(), scoreIco.getIconHeight());
         var x = scoreLabel.getX() + scoreLabel.getWidth() + 25;
         for (Integer dig : digits) {
             scoreScreenNumbers.add(new JLabel(numbers.get(dig).getIcon()));
-            scoreScreenNumbers.get(scoreScreenNumbers.size()-1).setBounds(x, y, numbers.get(dig).getIcon().getIconWidth(), numbers.get(dig).getIcon().getIconHeight());
+            scoreScreenNumbers.get(scoreScreenNumbers.size()-1).setBounds(x, 10, numbers.get(dig).getIcon().getIconWidth(), numbers.get(dig).getIcon().getIconHeight());
             panel.add(scoreScreenNumbers.get(scoreScreenNumbers.size()-1));
             x += 20;
         }
@@ -646,10 +643,10 @@ class GameScreen {
     }
 
     private void timeUfo(int delay, int y) {
-        new Timer(delay, e -> animateUfo(y, 4)).start();
+        new Timer(delay, e -> animateUfo(y)).start();
     }
 
-    private void animateUfo(int y, int interval) {
+    private void animateUfo(int y) {
         var frames = WINDOW_WIDTH + ufoIco.getIconWidth();
         Rectangle compBounds = ufo.getBounds();
         Point newPoint = new Point(WINDOW_WIDTH, y);
@@ -658,7 +655,7 @@ class GameScreen {
                 animFrame = new Point((newPoint.x - oldPoint.x) / frames,
                         (newPoint.y - oldPoint.y) / frames);
 
-        new Timer(interval, new ActionListener() {
+        new Timer(4, new ActionListener() {
             int currentFrame = 0;
             public void actionPerformed(ActionEvent e) {
                 ufo.setBounds(oldPoint.x + (animFrame.x * currentFrame),
@@ -692,6 +689,7 @@ class GameScreen {
                 animFrame = new Point((newPoint.x - oldPoint.x) / frames,
                         (newPoint.y - oldPoint.y) / frames);
 
+        int SHOOT_DELAY_BETWEEN_FRAMES = 3;
         new Timer(SHOOT_DELAY_BETWEEN_FRAMES, new ActionListener() {
             int currentFrame = 0;
             public void actionPerformed(ActionEvent e) {
@@ -750,7 +748,7 @@ class GameScreen {
         if (level == 1) {
             try {
                 Thread.sleep(1000);
-            } catch (Exception e) {
+            } catch (Exception ignored) {
 
             }
             new GameScreen(2);
@@ -758,7 +756,7 @@ class GameScreen {
         } else if (level == 2) {
             try {
                 Thread.sleep(1000);
-            } catch (Exception e) {
+            } catch (Exception ignored) {
 
             }
             new GameScreen(3);
@@ -766,7 +764,7 @@ class GameScreen {
         } else if (level == 3) {
             try {
                 Thread.sleep(1000);
-            } catch (Exception e) {
+            } catch (Exception ignored) {
 
             }
             new SuccessScreen();
@@ -792,19 +790,19 @@ class GameScreen {
         var plot = Utilities.randomNum(1, 4);
         switch (plot) {
             case 1 -> {
-                setScore(score += 50, 10);
+                setScore(score += 50);
                 scoreForBonus += 50;
             }
             case 2 -> {
-                setScore(score += 100, 10);
+                setScore(score += 100);
                 scoreForBonus += 100;
             }
             case 3 -> {
-                setScore(score += 150, 10);
+                setScore(score += 150);
                 scoreForBonus += 150;
             }
             case 4 -> {
-                setScore(score += 300, 10);
+                setScore(score += 300);
                 scoreForBonus += 300;
             }
         }
@@ -819,13 +817,13 @@ class GameScreen {
     private void addScoreForMonster(JLabel monster) {
         var icon = monster.getIcon();
         if (icon.equals(monster11Ico) || icon.equals(monster10Ico) || icon.equals(monster21Ico) || icon.equals(monster20Ico)) {
-            setScore(score += 30, 10);
+            setScore(score += 30);
             scoreForBonus += 30;
         } else if (icon.equals(monster31Ico) || icon.equals(monster30Ico)) {
-            setScore(score += 20, 10);
+            setScore(score += 20);
             scoreForBonus += 20;
         } else {
-            setScore(score += 10, 10);
+            setScore(score += 10);
             scoreForBonus += 10;
         }
         if (scoreForBonus >= 1500) {
@@ -847,10 +845,7 @@ class GameScreen {
                 min = monster.getX();
             }
         }
-        if (max + width + width/2 >= WINDOW_WIDTH || min - width/2 <= 0) {
-            return true;
-        }
-        return false;
+        return max + width + width / 2 >= WINDOW_WIDTH || min - width / 2 <= 0;
     }
 
     private void animateBoom(int x, int y) {
@@ -895,7 +890,6 @@ class GameOver {
     private final int WINDOW_WIDTH = 1200;
     private final int WINDOW_HEIGHT = 800;
 
-    private final int MAIN_SCREEN_RANDOM_BOOMS_DELAY = 200;
     private final int BOOM_DELAY_BETWEEN_FRAMES = 250;
     private final int ASTEROID_FALL_DELAY = 2000;
 
@@ -945,11 +939,12 @@ class GameOver {
         panel.add(button);
         panel.add(asteroid);
 
-        animateAsteroid(new Point(WINDOW_WIDTH, WINDOW_HEIGHT - 250), 630, 3);
+        animateAsteroid(new Point(WINDOW_WIDTH, WINDOW_HEIGHT - 250));
         makeRandomBooms();
     }
 
     private void makeRandomBooms() {
+        int MAIN_SCREEN_RANDOM_BOOMS_DELAY = 200;
         new Timer(MAIN_SCREEN_RANDOM_BOOMS_DELAY, e -> {
             ((Timer) e.getSource()).stop();
             animateBoom(Utilities.randomNum(0, WINDOW_WIDTH - boom1Ico.getIconWidth()), Utilities.randomNum(0, WINDOW_HEIGHT - boom1Ico.getIconHeight()));
@@ -976,13 +971,13 @@ class GameOver {
         }).start();
     }
 
-    private void animateAsteroid(Point newPoint, int frames, int interval) {
+    private void animateAsteroid(Point newPoint) {
         Rectangle compBounds = asteroid.getBounds();
         Point oldPoint = new Point(compBounds.x, compBounds.y),
-                animFrame = new Point((newPoint.x - oldPoint.x) / frames,
-                        (newPoint.y - oldPoint.y) / frames);
+                animFrame = new Point((newPoint.x - oldPoint.x) / 630,
+                        (newPoint.y - oldPoint.y) / 630);
 
-        new Timer(interval, new ActionListener() {
+        new Timer(3, new ActionListener() {
             int currentFrame = 0;
             public void actionPerformed(ActionEvent e) {
                 asteroid.setBounds(oldPoint.x + (animFrame.x * currentFrame),
@@ -990,7 +985,7 @@ class GameOver {
                         compBounds.width,
                         compBounds.height);
 
-                if (currentFrame != frames)
+                if (currentFrame != 630)
                     currentFrame++;
                 else {
                     ((Timer) e.getSource()).stop();
@@ -998,7 +993,7 @@ class GameOver {
                     asteroid.setBounds(-100, -80 + random, 100, 80);
                     new Timer(ASTEROID_FALL_DELAY, e1 -> {
                         ((Timer) e1.getSource()).stop();
-                        animateAsteroid(new Point(WINDOW_WIDTH, WINDOW_HEIGHT - 250 + random), 630, 3);
+                        animateAsteroid(new Point(WINDOW_WIDTH, WINDOW_HEIGHT - 250 + random));
                     }).start();
                 }
             }
@@ -1018,7 +1013,6 @@ class SuccessScreen {
     private final int WINDOW_WIDTH = 1200;
     private final int WINDOW_HEIGHT = 800;
 
-    private final int MAIN_SCREEN_RANDOM_BOOMS_DELAY = 200;
     private final int BOOM_DELAY_BETWEEN_FRAMES = 250;
     private final int ASTEROID_FALL_DELAY = 2000;
 
@@ -1068,11 +1062,12 @@ class SuccessScreen {
         panel.add(button);
         panel.add(asteroid);
 
-        animateAsteroid(new Point(WINDOW_WIDTH, WINDOW_HEIGHT - 250), 630, 3);
+        animateAsteroid(new Point(WINDOW_WIDTH, WINDOW_HEIGHT - 250));
         makeRandomBooms();
     }
 
     private void makeRandomBooms() {
+        int MAIN_SCREEN_RANDOM_BOOMS_DELAY = 200;
         new Timer(MAIN_SCREEN_RANDOM_BOOMS_DELAY, e -> {
             ((Timer) e.getSource()).stop();
             animateBoom(Utilities.randomNum(0, WINDOW_WIDTH - boom1Ico.getIconWidth()), Utilities.randomNum(0, WINDOW_HEIGHT - boom1Ico.getIconHeight()));
@@ -1099,13 +1094,13 @@ class SuccessScreen {
         }).start();
     }
 
-    private void animateAsteroid(Point newPoint, int frames, int interval) {
+    private void animateAsteroid(Point newPoint) {
         Rectangle compBounds = asteroid.getBounds();
         Point oldPoint = new Point(compBounds.x, compBounds.y),
-                animFrame = new Point((newPoint.x - oldPoint.x) / frames,
-                        (newPoint.y - oldPoint.y) / frames);
+                animFrame = new Point((newPoint.x - oldPoint.x) / 630,
+                        (newPoint.y - oldPoint.y) / 630);
 
-        new Timer(interval, new ActionListener() {
+        new Timer(3, new ActionListener() {
             int currentFrame = 0;
             public void actionPerformed(ActionEvent e) {
                 asteroid.setBounds(oldPoint.x + (animFrame.x * currentFrame),
@@ -1113,7 +1108,7 @@ class SuccessScreen {
                         compBounds.width,
                         compBounds.height);
 
-                if (currentFrame != frames)
+                if (currentFrame != 630)
                     currentFrame++;
                 else {
                     ((Timer) e.getSource()).stop();
@@ -1121,7 +1116,7 @@ class SuccessScreen {
                     asteroid.setBounds(-100, -80 + random, 100, 80);
                     new Timer(ASTEROID_FALL_DELAY, e1 -> {
                         ((Timer) e1.getSource()).stop();
-                        animateAsteroid(new Point(WINDOW_WIDTH, WINDOW_HEIGHT - 250 + random), 630, 3);
+                        animateAsteroid(new Point(WINDOW_WIDTH, WINDOW_HEIGHT - 250 + random));
                     }).start();
                 }
             }
@@ -1140,10 +1135,6 @@ class SuccessScreen {
 class ImagePanel extends JPanel {
 
     private final Image img;
-
-    public ImagePanel(String img) {
-        this(new ImageIcon(img).getImage());
-    }
 
     public ImagePanel(Image img) {
         this.img = img;
@@ -1217,9 +1208,6 @@ class Utilities {
     }
 
     public static boolean isContain(JComponent comp, int x, int y) {
-        if ((x >= comp.getX() && x <= comp.getX() + comp.getWidth()) && (y >= comp.getY() && y <= comp.getY() + comp.getHeight())) {
-            return true;
-        }
-        return false;
+        return (x >= comp.getX() && x <= comp.getX() + comp.getWidth()) && (y >= comp.getY() && y <= comp.getY() + comp.getHeight());
     }
 }

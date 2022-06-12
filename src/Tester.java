@@ -27,25 +27,20 @@ class MainScreen {
             buttonIco = new ImageIcon("images/buttons/play_button.png"),
             boom1Ico = new ImageIcon("images/booms/boom1.png"),
             boom2Ico = new ImageIcon("images/booms/boom2.png"),
-            boom3Ico = new ImageIcon("images/booms/boom3.png"),
-            highScoreIco = new ImageIcon("images/labels/high_score.png");
+            boom3Ico = new ImageIcon("images/booms/boom3.png");
 
     // Screen Elements
     private final JLabel asteroid = new JLabel(asteroidIco),
             red = new JLabel(redIco),
             green = new JLabel(greenIco),
             blue = new JLabel(blueIco),
-            logo = new JLabel(logoIco),
-            highScoreLabel = new JLabel(highScoreIco);
+            logo = new JLabel(logoIco);
     private final JButton button = new JButton(buttonIco);
 
 
     // Frame and Panel
     private final JFrame frame = new JFrame();
     private final ImagePanel panel = new ImagePanel(background.getImage());
-
-    // High score
-    private int highScore = 0;
 
     public MainScreen() {
         setPanel();
@@ -72,7 +67,7 @@ class MainScreen {
 
         button.setBounds(400, 550, 400, 133);
         button.addActionListener(e -> {
-            new GameScreen();
+            new GameScreen(1);
             frame.dispose();
         });
 
@@ -80,7 +75,6 @@ class MainScreen {
         panel.add(green);
         panel.add(blue);
         panel.add(logo);
-        setHighScoreLabel(440);
         panel.add(button);
         panel.add(asteroid);
 
@@ -170,25 +164,6 @@ class MainScreen {
         }).start();
     }
 
-    private void setHighScoreLabel(int y) {
-        var stringHighScore = String.valueOf(highScore);
-        ArrayList<ImageIcon> numbers = new ArrayList<>();
-        var width = highScoreIco.getIconWidth() + 40;
-        for (int i = 0; i < stringHighScore.length(); i++) {
-            numbers.add(new ImageIcon("images/numbers/" + stringHighScore.charAt(i) + ".png"));
-            width += 35;
-        }
-        highScoreLabel.setBounds(WINDOW_WIDTH/2 - width/2, y, highScoreIco.getIconWidth(), highScoreIco.getIconHeight());
-        panel.add(highScoreLabel);
-        var x = highScoreLabel.getX() + highScoreLabel.getWidth() + 45;
-        for (ImageIcon ico : numbers) {
-            var label = new JLabel(ico);
-            label.setBounds(x, y, ico.getIconWidth(), ico.getIconHeight());
-            panel.add(label);
-            x += 35;
-        }
-    }
-
     private void setFrame() {
         frame.setSize(WINDOW_WIDTH, WINDOW_HEIGHT);
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
@@ -207,12 +182,12 @@ class GameScreen {
     private final int UFO_DELAY = 25000;
     private final int X_MOVEMENT_DIST_FOR_MONSTERS = 20;
     private final int Y_MOVEMENT_DIST_FOR_MONSTERS = 20;
-    private int TIME_INTERVAL_IN_MONSTERS_MOVEMENTS = 1000;
-    private int MIN_TIME_INTERVAL_BETWEEN_MONSTERS_SHOTS = 500;
-    private int MAX_TIME_INTERVAL_BETWEEN_MONSTERS_SHOTS = 900;
+    private int TIME_INTERVAL_IN_MONSTERS_MOVEMENTS,
+            MIN_TIME_INTERVAL_BETWEEN_MONSTERS_SHOTS,
+            MAX_TIME_INTERVAL_BETWEEN_MONSTERS_SHOTS;
 
     // Icons
-    private final ImageIcon background = new ImageIcon("images/background.png"),
+    private static final ImageIcon background = new ImageIcon("images/background.png"),
             livesIco = new ImageIcon("images/labels/lives.png"),
             scoreIco = new ImageIcon("images/labels/score.png"),
             levelIco = new ImageIcon("images/labels/level.png"),
@@ -220,7 +195,6 @@ class GameScreen {
             emptyHeartIco = new ImageIcon("images/icons/empty_heart.png"),
             rocketIco = new ImageIcon("images/icons/rocket.png"),
             rocketShotIco = new ImageIcon("images/icons/rocket_shot.png"),
-            gameOverIco = new ImageIcon("images/labels/game_over.png"),
             monster10Ico = new ImageIcon("images/monsters/monster1_0.png"),
             monster11Ico = new ImageIcon("images/monsters/monster1_1.png"),
             monster20Ico = new ImageIcon("images/monsters/monster2_0.png"),
@@ -234,6 +208,9 @@ class GameScreen {
             boom2Ico = new ImageIcon("images/booms/boom2.png"),
             boom3Ico = new ImageIcon("images/booms/boom3.png"),
             ufoIco = new ImageIcon("images/icons/ufo.png"),
+            castleIco = new ImageIcon("images/icons/castle.png"),
+            castle1Ico = new ImageIcon("images/icons/castle1.png"),
+            castle2Ico = new ImageIcon("images/icons/castle2.png"),
             monsterShotIco = new ImageIcon("images/icons/monster_shot.png"),
             monster51Ico = new ImageIcon("images/monsters/monster5_1.png");
 
@@ -243,12 +220,12 @@ class GameScreen {
             levelLabel = new JLabel(levelIco),
             rocketLabel = new JLabel(rocketIco),
             rocketShotLabel = new JLabel(rocketShotIco),
-            ufo = new JLabel(ufoIco),
-            gameOverLabel = new JLabel(gameOverIco);
+            ufo = new JLabel(ufoIco);
     private final ArrayList<JLabel> hearts = new ArrayList<>(),
             numbers = new ArrayList<>(),
             levelScreenNumbers = new ArrayList<>(),
             scoreScreenNumbers = new ArrayList<>(),
+            castles = new ArrayList<>(),
             monsters = new ArrayList<>();
 
 
@@ -257,16 +234,37 @@ class GameScreen {
     private final JFrame frame = new JFrame();
     private final ImagePanel panel = new ImagePanel(background.getImage());
 
-    private boolean rocketIsOut = false;
-    private boolean down = true;
+    private boolean rocketIsOut = false,
+            down = true;
     private String direction = "right";
 
-    private int score = 0;
-    private int scoreForBonus = 0;
-    private int lives = 3;
+    private int score = 0,
+            scoreForBonus = 0,
+            lives = 3;
 
+    private final int level;
 
-    public GameScreen() {
+    private ArrayList<Integer> castlesHp = new ArrayList<>();
+
+    public GameScreen(int level) {
+        this.level = level;
+        switch (level) {
+            case 1 -> {
+                TIME_INTERVAL_IN_MONSTERS_MOVEMENTS = 900;
+                MIN_TIME_INTERVAL_BETWEEN_MONSTERS_SHOTS = 1000;
+                MAX_TIME_INTERVAL_BETWEEN_MONSTERS_SHOTS = 1300;
+            }
+            case 2 -> {
+                TIME_INTERVAL_IN_MONSTERS_MOVEMENTS = 800;
+                MIN_TIME_INTERVAL_BETWEEN_MONSTERS_SHOTS = 700;
+                MAX_TIME_INTERVAL_BETWEEN_MONSTERS_SHOTS = 1000;
+            }
+            case 3 -> {
+                TIME_INTERVAL_IN_MONSTERS_MOVEMENTS = 700;
+                MIN_TIME_INTERVAL_BETWEEN_MONSTERS_SHOTS = 500;
+                MAX_TIME_INTERVAL_BETWEEN_MONSTERS_SHOTS = 800;
+            }
+        }
         setPanel();
         setFrame();
         setVisible();
@@ -347,7 +345,7 @@ class GameScreen {
         panel.add(scoreLabel);
         setScore(score, 10);
         panel.add(levelLabel);
-        setLevel(1, 10);
+        setLevel(level, 10);
 
         rocketLabel.setBounds(WINDOW_WIDTH/2 - rocketIco.getIconWidth()/2, 741, rocketIco.getIconWidth(), rocketIco.getIconHeight());
 
@@ -360,6 +358,12 @@ class GameScreen {
 
         createMonsters();
 
+        createCastles();
+        castlesHp.add(30);
+        castlesHp.add(30);
+        castlesHp.add(30);
+        castlesHp.add(30);
+
         for (JLabel monster : monsters) {
             panel.add(monster);
         }
@@ -370,7 +374,7 @@ class GameScreen {
 
     private void animateMonstersShots() {
         var delay = Utilities.randomNum(MIN_TIME_INTERVAL_BETWEEN_MONSTERS_SHOTS, MAX_TIME_INTERVAL_BETWEEN_MONSTERS_SHOTS);
-        new Timer(delay, e -> {
+        new Timer(delay, e ->  {
             monsterShoot(randomMonster());
             animateMonstersShots();
             ((Timer) e.getSource()).stop();
@@ -383,7 +387,7 @@ class GameScreen {
         panel.add(shot);
         animateMonsterShot(shot, new Point(shot.getX(), WINDOW_HEIGHT), WINDOW_HEIGHT - shot.getY(), 2);
     }
-    public static void animateMonsterShot(JComponent component, Point newPoint, int frames, int interval) {
+    public void animateMonsterShot(JComponent component, Point newPoint, int frames, int interval) {
         Rectangle compBounds = component.getBounds();
 
         Point oldPoint = new Point(compBounds.x, compBounds.y),
@@ -399,14 +403,74 @@ class GameScreen {
                         compBounds.width,
                         compBounds.height);
 
-                if (currentFrame != frames)
-                    currentFrame++;
-                else
+                if (checkCollisionWithRocketOrCastle(component)) {
                     ((Timer) e.getSource()).stop();
+                    animateBoom(component.getX() + component.getWidth()/2 - boom1Ico.getIconWidth()/2,
+                            component.getY() + component.getHeight() - boom1Ico.getIconHeight()/2);
+                    panel.remove(component);
+                }
+                if (currentFrame != frames) {
+                    currentFrame++;
+                } else {
+                    ((Timer) e.getSource()).stop();
+                    panel.remove(component);
+                }
             }
         }).start();
     }
+    private boolean checkCollisionWithRocketOrCastle(JComponent component) {
+        if (Utilities.isContain(rocketLabel, component.getX(), component.getY() + component.getHeight()) ||
+                Utilities.isContain(rocketLabel, component.getX() + component.getWidth()/2, component.getHeight()) ||
+                Utilities.isContain(rocketLabel, component.getX() + component.getWidth(), component.getHeight())) {
+            if (lives == 1) {
+                gameOver();
+                return true;
+            }
+            setLives(lives - 1);
+            makeRocketTransparent();
+            return true;
+        }
+        for (JLabel castle : castles) {
+            if (Utilities.isContain(castle, component.getX(), component.getY() + component.getHeight()) ||
+                    Utilities.isContain(castle, component.getX() + component.getWidth()/2, component.getHeight()) ||
+                    Utilities.isContain(castle, component.getX() + component.getWidth(), component.getHeight())) {
+                var index = castles.indexOf(castle);
+                castlesHp.set(index, castlesHp.get(castles.indexOf(castle))-1);
+                if (castlesHp.get(index) == 20) {
+                    castle.setIcon(castle1Ico);
+                } else if (castlesHp.get(index) == 10) {
+                    castle.setIcon(castle2Ico);
+                } else if (castlesHp.get(index) == 0) {
+                    panel.remove(castle);
+                    castles.remove(index);
+                    castlesHp.remove(index);
+                    panel.repaint();
+                }
+                return true;
+            }
+        }
+        return false;
+    }
 
+    private void gameOver() {
+        try {
+            Thread.sleep(1000);
+        } catch (Exception e) {
+
+        }
+        new GameOver();
+        frame.dispose();
+    }
+    private void makeRocketTransparent() {
+        new Timer(400, e -> {
+            rocketLabel.setVisible(false);
+            new Timer(400, e1 -> {
+                ((Timer) e1.getSource()).stop();
+                ((Timer) e.getSource()).stop();
+                rocketLabel.setVisible(true);
+            }).start();
+        }).start();
+    }
     private JLabel randomMonster() {
         return monsters.get(Utilities.randomNum(0, monsters.size()-1));
     }
@@ -414,6 +478,11 @@ class GameScreen {
         var width = monster10Ico.getIconWidth();
         new Timer(timeInterval, e -> {
             for (JLabel monster : monsters) {
+                if (monster.getY()+monster.getHeight() >= rocketLabel.getY()) {
+                    ((Timer) e.getSource()).stop();
+                    gameOver();
+                    return;
+                }
                 Icon icon = monster.getIcon();
                 if (monster10Ico.equals(icon)) {
                     monster.setIcon(monster11Ico);
@@ -492,6 +561,16 @@ class GameScreen {
         createMonsterRaw(monster40Ico, y);
         y += distY + monsterHeight;
         createMonsterRaw(monster50Ico, y);
+    }
+
+    private void createCastles() {
+        var y = 630;
+        for (int i = 1; i <= 4; i++) {
+            castles.add(new JLabel(castleIco));
+            castles.get(castles.size()-1).setBounds((WINDOW_WIDTH/5)*i - castleIco.getIconWidth()/2, y, castleIco.getIconWidth(), castleIco.getIconHeight());
+            panel.add(castles.get(castles.size()-1));
+        }
+
     }
     private void createMonsterRaw(ImageIcon ico, int y) {
         var distX = 40;
@@ -620,7 +699,7 @@ class GameScreen {
                         oldPoint.y + (animFrame.y * currentFrame),
                         compBounds.width,
                         compBounds.height);
-                if (checkShootForCollisionWithMonster(component)) {
+                if (checkShootForCollisionWithMonster(component) || checkShootForCollisionWithCastle(component)) {
                     ((Timer) e.getSource()).stop();
                 }
                 if (currentFrame != frames)
@@ -645,6 +724,9 @@ class GameScreen {
                 panel.remove(rocketShotLabel);
                 rocketIsOut = false;
                 panel.repaint();
+                if (monsters.size() == 0) {
+                    nextLevelOrWin();
+                }
                 return true;
             }
         }
@@ -660,6 +742,48 @@ class GameScreen {
             rocketIsOut = false;
             panel.repaint();
             return true;
+        }
+        return false;
+    }
+
+    private void nextLevelOrWin() {
+        if (level == 1) {
+            try {
+                Thread.sleep(1000);
+            } catch (Exception e) {
+
+            }
+            new GameScreen(2);
+            frame.dispose();
+        } else if (level == 2) {
+            try {
+                Thread.sleep(1000);
+            } catch (Exception e) {
+
+            }
+            new GameScreen(3);
+            frame.dispose();
+        } else if (level == 3) {
+            try {
+                Thread.sleep(1000);
+            } catch (Exception e) {
+
+            }
+            new SuccessScreen();
+            frame.dispose();
+        }
+    }
+    private boolean checkShootForCollisionWithCastle(JComponent rocketShot) {
+        for (JLabel castle : castles) {
+            if (Utilities.isContain(castle, rocketShot.getX() + rocketShot.getWidth()/2, rocketShot.getY()) ||
+                    Utilities.isContain(castle, rocketShot.getX(), rocketShot.getY()) ||
+                    Utilities.isContain(castle, rocketShot.getX() + rocketShot.getWidth(), rocketShot.getY())) {
+                animateBoom(rocketShot.getX() + rocketShot.getWidth()/2 - boom1Ico.getIconWidth()/2, rocketShot.getY() - boom1Ico.getIconWidth()/2);
+                panel.remove(rocketShotLabel);
+                rocketIsOut = false;
+                panel.repaint();
+                return true;
+            }
         }
         return false;
     }
@@ -684,8 +808,8 @@ class GameScreen {
                 scoreForBonus += 300;
             }
         }
-        if (scoreForBonus >= 50) {
-            scoreForBonus -= 50;
+        if (scoreForBonus >= 1500) {
+            scoreForBonus -= 1500;
             if (lives < 3) {
                 setLives(lives + 1);
             }
@@ -704,8 +828,8 @@ class GameScreen {
             setScore(score += 10, 10);
             scoreForBonus += 10;
         }
-        if (scoreForBonus >= 50) {
-            scoreForBonus -= 50;
+        if (scoreForBonus >= 1500) {
+            scoreForBonus -= 1500;
             if (lives < 3) {
                 setLives(lives + 1);
             }
@@ -764,6 +888,252 @@ class GameScreen {
         for (JLabel monster : monsters) {
             Utilities.animate(monster, new Point(monster.getX(), monster.getY() + movementDist), movementDist, timeInterval/2/movementDist);
         }
+    }
+}
+
+class GameOver {
+    private final int WINDOW_WIDTH = 1200;
+    private final int WINDOW_HEIGHT = 800;
+
+    private final int MAIN_SCREEN_RANDOM_BOOMS_DELAY = 200;
+    private final int BOOM_DELAY_BETWEEN_FRAMES = 250;
+    private final int ASTEROID_FALL_DELAY = 2000;
+
+    // Icons
+    private final ImageIcon background = new ImageIcon("images/background.png"),
+            asteroidIco = new ImageIcon("images/icons/asteroid.png"),
+            gameOverIco = new ImageIcon("images/labels/game_over.png"),
+            buttonIco = new ImageIcon("images/buttons/restart_button.png"),
+            boom1Ico = new ImageIcon("images/booms/boom1.png"),
+            boom2Ico = new ImageIcon("images/booms/boom2.png"),
+            boom3Ico = new ImageIcon("images/booms/boom3.png");
+
+    // Screen Elements
+    private final JLabel asteroid = new JLabel(asteroidIco),
+            gameOver = new JLabel(gameOverIco);
+    private final JButton button = new JButton(buttonIco);
+
+
+    // Frame and Panel
+    private final JFrame frame = new JFrame();
+    private final ImagePanel panel = new ImagePanel(background.getImage());
+
+    public GameOver() {
+        setPanel();
+        setFrame();
+        setVisible();
+    }
+
+    public void setVisible() {
+        frame.setVisible(true);
+    }
+
+    private void setPanel() {
+        panel.setLayout(null);
+
+        asteroid.setBounds(-100, -80, asteroidIco.getIconWidth(), asteroidIco.getIconHeight());
+
+        gameOver.setBounds(WINDOW_WIDTH/2 - gameOverIco.getIconWidth()/2, 300, gameOverIco.getIconWidth(), gameOverIco.getIconHeight());
+
+        button.setBounds(400, 550, 400, 133);
+        button.addActionListener(e -> {
+            new GameScreen(1);
+            frame.dispose();
+        });
+
+        panel.add(gameOver);
+        panel.add(button);
+        panel.add(asteroid);
+
+        animateAsteroid(new Point(WINDOW_WIDTH, WINDOW_HEIGHT - 250), 630, 3);
+        makeRandomBooms();
+    }
+
+    private void makeRandomBooms() {
+        new Timer(MAIN_SCREEN_RANDOM_BOOMS_DELAY, e -> {
+            ((Timer) e.getSource()).stop();
+            animateBoom(Utilities.randomNum(0, WINDOW_WIDTH - boom1Ico.getIconWidth()), Utilities.randomNum(0, WINDOW_HEIGHT - boom1Ico.getIconHeight()));
+            makeRandomBooms();
+        }).start();
+    }
+
+    private void animateBoom(int x, int y) {
+        var boom = new JLabel(boom1Ico);
+        boom.setBounds(x, y, boom1Ico.getIconWidth(), boom1Ico.getIconHeight());
+        panel.add(boom);
+        new Timer(BOOM_DELAY_BETWEEN_FRAMES, e -> {
+            boom.setIcon(boom2Ico);
+            new Timer(BOOM_DELAY_BETWEEN_FRAMES, e1 -> {
+                boom.setIcon(boom3Ico);
+                new Timer(BOOM_DELAY_BETWEEN_FRAMES, e11 -> {
+                    panel.remove(boom);
+                    panel.repaint();
+                    ((Timer) e11.getSource()).stop();
+                }).start();
+                ((Timer) e1.getSource()).stop();
+            }).start();
+            ((Timer) e.getSource()).stop();
+        }).start();
+    }
+
+    private void animateAsteroid(Point newPoint, int frames, int interval) {
+        Rectangle compBounds = asteroid.getBounds();
+        Point oldPoint = new Point(compBounds.x, compBounds.y),
+                animFrame = new Point((newPoint.x - oldPoint.x) / frames,
+                        (newPoint.y - oldPoint.y) / frames);
+
+        new Timer(interval, new ActionListener() {
+            int currentFrame = 0;
+            public void actionPerformed(ActionEvent e) {
+                asteroid.setBounds(oldPoint.x + (animFrame.x * currentFrame),
+                        oldPoint.y + (animFrame.y * currentFrame),
+                        compBounds.width,
+                        compBounds.height);
+
+                if (currentFrame != frames)
+                    currentFrame++;
+                else {
+                    ((Timer) e.getSource()).stop();
+                    var random = Utilities.randomNum(0, 800);
+                    asteroid.setBounds(-100, -80 + random, 100, 80);
+                    new Timer(ASTEROID_FALL_DELAY, e1 -> {
+                        ((Timer) e1.getSource()).stop();
+                        animateAsteroid(new Point(WINDOW_WIDTH, WINDOW_HEIGHT - 250 + random), 630, 3);
+                    }).start();
+                }
+            }
+        }).start();
+    }
+
+    private void setFrame() {
+        frame.setSize(WINDOW_WIDTH, WINDOW_HEIGHT);
+        frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        frame.setResizable(false);
+        frame.setTitle("Space Defenders");
+        frame.add(panel);
+    }
+}
+
+class SuccessScreen {
+    private final int WINDOW_WIDTH = 1200;
+    private final int WINDOW_HEIGHT = 800;
+
+    private final int MAIN_SCREEN_RANDOM_BOOMS_DELAY = 200;
+    private final int BOOM_DELAY_BETWEEN_FRAMES = 250;
+    private final int ASTEROID_FALL_DELAY = 2000;
+
+    // Icons
+    private final ImageIcon background = new ImageIcon("images/background.png"),
+            asteroidIco = new ImageIcon("images/icons/asteroid.png"),
+            youWonIco = new ImageIcon("images/labels/you_won.png"),
+            buttonIco = new ImageIcon("images/buttons/main_menu_button.png"),
+            boom1Ico = new ImageIcon("images/booms/boom1.png"),
+            boom2Ico = new ImageIcon("images/booms/boom2.png"),
+            boom3Ico = new ImageIcon("images/booms/boom3.png");
+
+    // Screen Elements
+    private final JLabel asteroid = new JLabel(asteroidIco),
+            youWon = new JLabel(youWonIco);
+    private final JButton button = new JButton(buttonIco);
+
+
+    // Frame and Panel
+    private final JFrame frame = new JFrame();
+    private final ImagePanel panel = new ImagePanel(background.getImage());
+
+    public SuccessScreen() {
+        setPanel();
+        setFrame();
+        setVisible();
+    }
+
+    public void setVisible() {
+        frame.setVisible(true);
+    }
+
+    private void setPanel() {
+        panel.setLayout(null);
+
+        asteroid.setBounds(-100, -80, asteroidIco.getIconWidth(), asteroidIco.getIconHeight());
+
+        youWon.setBounds(WINDOW_WIDTH/2 - youWonIco.getIconWidth()/2, 300, youWonIco.getIconWidth(), youWonIco.getIconHeight());
+
+        button.setBounds(400, 550, 400, 133);
+        button.addActionListener(e -> {
+            new MainScreen();
+            frame.dispose();
+        });
+
+        panel.add(youWon);
+        panel.add(button);
+        panel.add(asteroid);
+
+        animateAsteroid(new Point(WINDOW_WIDTH, WINDOW_HEIGHT - 250), 630, 3);
+        makeRandomBooms();
+    }
+
+    private void makeRandomBooms() {
+        new Timer(MAIN_SCREEN_RANDOM_BOOMS_DELAY, e -> {
+            ((Timer) e.getSource()).stop();
+            animateBoom(Utilities.randomNum(0, WINDOW_WIDTH - boom1Ico.getIconWidth()), Utilities.randomNum(0, WINDOW_HEIGHT - boom1Ico.getIconHeight()));
+            makeRandomBooms();
+        }).start();
+    }
+
+    private void animateBoom(int x, int y) {
+        var boom = new JLabel(boom1Ico);
+        boom.setBounds(x, y, boom1Ico.getIconWidth(), boom1Ico.getIconHeight());
+        panel.add(boom);
+        new Timer(BOOM_DELAY_BETWEEN_FRAMES, e -> {
+            boom.setIcon(boom2Ico);
+            new Timer(BOOM_DELAY_BETWEEN_FRAMES, e1 -> {
+                boom.setIcon(boom3Ico);
+                new Timer(BOOM_DELAY_BETWEEN_FRAMES, e11 -> {
+                    panel.remove(boom);
+                    panel.repaint();
+                    ((Timer) e11.getSource()).stop();
+                }).start();
+                ((Timer) e1.getSource()).stop();
+            }).start();
+            ((Timer) e.getSource()).stop();
+        }).start();
+    }
+
+    private void animateAsteroid(Point newPoint, int frames, int interval) {
+        Rectangle compBounds = asteroid.getBounds();
+        Point oldPoint = new Point(compBounds.x, compBounds.y),
+                animFrame = new Point((newPoint.x - oldPoint.x) / frames,
+                        (newPoint.y - oldPoint.y) / frames);
+
+        new Timer(interval, new ActionListener() {
+            int currentFrame = 0;
+            public void actionPerformed(ActionEvent e) {
+                asteroid.setBounds(oldPoint.x + (animFrame.x * currentFrame),
+                        oldPoint.y + (animFrame.y * currentFrame),
+                        compBounds.width,
+                        compBounds.height);
+
+                if (currentFrame != frames)
+                    currentFrame++;
+                else {
+                    ((Timer) e.getSource()).stop();
+                    var random = Utilities.randomNum(0, 800);
+                    asteroid.setBounds(-100, -80 + random, 100, 80);
+                    new Timer(ASTEROID_FALL_DELAY, e1 -> {
+                        ((Timer) e1.getSource()).stop();
+                        animateAsteroid(new Point(WINDOW_WIDTH, WINDOW_HEIGHT - 250 + random), 630, 3);
+                    }).start();
+                }
+            }
+        }).start();
+    }
+
+    private void setFrame() {
+        frame.setSize(WINDOW_WIDTH, WINDOW_HEIGHT);
+        frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        frame.setResizable(false);
+        frame.setTitle("Space Defenders");
+        frame.add(panel);
     }
 }
 

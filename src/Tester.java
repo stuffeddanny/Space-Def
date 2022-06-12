@@ -208,6 +208,8 @@ class GameScreen {
     private final int X_MOVEMENT_DIST_FOR_MONSTERS = 20;
     private final int Y_MOVEMENT_DIST_FOR_MONSTERS = 20;
     private int TIME_INTERVAL_IN_MONSTERS_MOVEMENTS = 1000;
+    private int MIN_TIME_INTERVAL_BETWEEN_MONSTERS_SHOTS = 500;
+    private int MAX_TIME_INTERVAL_BETWEEN_MONSTERS_SHOTS = 900;
 
     // Icons
     private final ImageIcon background = new ImageIcon("images/background.png"),
@@ -232,6 +234,7 @@ class GameScreen {
             boom2Ico = new ImageIcon("images/booms/boom2.png"),
             boom3Ico = new ImageIcon("images/booms/boom3.png"),
             ufoIco = new ImageIcon("images/icons/ufo.png"),
+            monsterShotIco = new ImageIcon("images/icons/monster_shot.png"),
             monster51Ico = new ImageIcon("images/monsters/monster5_1.png");
 
     // Screen Elements
@@ -362,9 +365,51 @@ class GameScreen {
         }
 
         animateMonsters(Y_MOVEMENT_DIST_FOR_MONSTERS, X_MOVEMENT_DIST_FOR_MONSTERS, TIME_INTERVAL_IN_MONSTERS_MOVEMENTS);
-
+        animateMonstersShots();
     }
 
+    private void animateMonstersShots() {
+        var delay = Utilities.randomNum(MIN_TIME_INTERVAL_BETWEEN_MONSTERS_SHOTS, MAX_TIME_INTERVAL_BETWEEN_MONSTERS_SHOTS);
+        new Timer(delay, e -> {
+            monsterShoot(randomMonster());
+            animateMonstersShots();
+            ((Timer) e.getSource()).stop();
+        }).start();
+    }
+
+    private void monsterShoot(JLabel monster) {
+        var shot = new JLabel(monsterShotIco);
+        shot.setBounds(monster.getX()+monster.getWidth()/2-monsterShotIco.getIconWidth()/2, monster.getY() + 10, monsterShotIco.getIconWidth(), monsterShotIco.getIconHeight());
+        panel.add(shot);
+        animateMonsterShot(shot, new Point(shot.getX(), WINDOW_HEIGHT), WINDOW_HEIGHT - shot.getY(), 2);
+    }
+    public static void animateMonsterShot(JComponent component, Point newPoint, int frames, int interval) {
+        Rectangle compBounds = component.getBounds();
+
+        Point oldPoint = new Point(compBounds.x, compBounds.y),
+                animFrame = new Point((newPoint.x - oldPoint.x) / frames,
+                        (newPoint.y - oldPoint.y) / frames);
+
+        new Timer(interval, new ActionListener() {
+            int currentFrame = 0;
+
+            public void actionPerformed(ActionEvent e) {
+                component.setBounds(oldPoint.x + (animFrame.x * currentFrame),
+                        oldPoint.y + (animFrame.y * currentFrame),
+                        compBounds.width,
+                        compBounds.height);
+
+                if (currentFrame != frames)
+                    currentFrame++;
+                else
+                    ((Timer) e.getSource()).stop();
+            }
+        }).start();
+    }
+
+    private JLabel randomMonster() {
+        return monsters.get(Utilities.randomNum(0, monsters.size()-1));
+    }
     private void animateMonsters(int downMovDist, int movementDist, int timeInterval) {
         var width = monster10Ico.getIconWidth();
         new Timer(timeInterval, e -> {

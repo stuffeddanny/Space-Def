@@ -1,11 +1,27 @@
+import javax.sound.sampled.AudioInputStream;
+import javax.sound.sampled.AudioSystem;
+import javax.sound.sampled.Clip;
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.*;
+import java.io.File;
 import java.util.ArrayList;
 
 public class Tester {
     public static void main(String[] args) {
         new MainScreen();
+        try {
+            SimpleAudioPlayer();
+        } catch (Exception e) {}
+    }
+
+    private static void SimpleAudioPlayer() throws Exception {
+        AudioInputStream audioInputStream = AudioSystem.getAudioInputStream(new File("sounds/background.wav").getAbsoluteFile());
+
+        Clip clip = AudioSystem.getClip();
+        clip.open(audioInputStream);
+
+        clip.loop(Clip.LOOP_CONTINUOUSLY);
     }
 }
 
